@@ -1,0 +1,39 @@
+on:
+  push:
+    branches: [pub]
+
+name: Example
+
+jobs:
+  uv-example:
+    name: python
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.4"
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
+
+      - run: echo "VERSION=$(poetry version -s)" >> $GITHUB_ENV
+        id: version-check
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
