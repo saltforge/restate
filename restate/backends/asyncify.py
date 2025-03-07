@@ -1,6 +1,9 @@
 from pathlib import PurePosixPath as Path
-from typing_extensions import Any
+from typing_extensions import Any, TypeVar
 from restate.backends.base import AsyncBackend, Backend
+
+
+_T = TypeVar("_T")
 
 
 class AsyncifyBackend(AsyncBackend):
@@ -16,8 +19,8 @@ class AsyncifyBackend(AsyncBackend):
     async def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         return self.sync_backend.read(path, default)
 
     async def write(self, path: Path, value: Any | None) -> None:

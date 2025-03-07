@@ -6,6 +6,7 @@ from .base import Backend, AsyncBackend
 
 
 _B = TypeVar("_B", bound=Union[Backend, AsyncBackend])
+_T = TypeVar("_T")
 
 
 class HybridBackendBase(Generic[_B]):
@@ -45,8 +46,8 @@ class HybridSyncBackend(Backend, HybridBackendBase[Backend]):
     def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         local_path, backend = self.resolve_backend(path)
         return backend.read(local_path)
 
@@ -67,8 +68,8 @@ class HybridAsyncBackend(AsyncBackend, HybridBackendBase[AsyncBackend]):
     async def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         local_path, backend = self.resolve_backend(path)
         return await backend.read(local_path)
 

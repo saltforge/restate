@@ -2,7 +2,10 @@ on:
   push:
     branches: [pub]
 
-name: Example
+name: Publish to PyPI
+
+permissions:
+  contents: write
 
 jobs:
   uv-example:

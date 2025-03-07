@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath as Path
-from typing_extensions import Any
+from typing_extensions import Any, TypeVar
+
+_T = TypeVar("_T")
 
 
 class Backend:
     def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None: ...
+        default: _T = None,
+    ) -> Any | _T: ...
 
     def write(
         self,
@@ -24,8 +26,8 @@ class AsyncBackend:
     async def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None: ...
+        default: Any | _T = None,
+    ) -> Any | _T: ...
 
     async def write(
         self,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import PurePath
-from typing_extensions import Any, TypeAlias
+from typing_extensions import Any, TypeAlias, TypeVar
 from restate.shared.constants import ROOT_PATH
 from restate.shared.sentinel import Sentinel
 from .base import Backend
@@ -10,6 +10,8 @@ from .base import Backend
 NestedStore: TypeAlias = dict
 
 NESTED_KEY = Sentinel("nested")
+
+_T = TypeVar("_T")
 
 
 class InMemoryBackend(Backend):
@@ -36,8 +38,8 @@ class InMemoryBackend(Backend):
     def read(
         self,
         path: PurePath,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         store = self.get_store(path)
 
         if not store:

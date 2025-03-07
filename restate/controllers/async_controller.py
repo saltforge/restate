@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath as Path
 from typing import Callable
-from typing_extensions import Any, Awaitable, Self, Sequence, TypeVar, Union
+from typing_extensions import Any, Awaitable, Self, Sequence, TypeVar
 import operator
 
 from .base import BaseController, DeriveData
@@ -13,8 +13,7 @@ from restate.backends.base import AsyncBackend, Backend
 from restate.backends.memory import InMemoryBackend
 from restate.shared.sentinel import Sentinel
 
-
-_B = TypeVar("_B", bound=Union[Backend, AsyncBackend])
+_T = TypeVar("_T")
 
 
 class ControllerAsync(BaseController):
@@ -35,9 +34,9 @@ class ControllerAsync(BaseController):
     async def get_state(
         self,
         path: Path | str,
-        default: Any | None = None,
+        default: _T = None,
         write_default: bool = False,
-    ) -> Any | None:
+    ) -> Any | _T:
         """
         Read the state at the `path`
 

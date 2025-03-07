@@ -15,6 +15,7 @@ from .memory import InMemoryBackend
 
 
 _B = TypeVar("_B", bound=Union[Backend, AsyncBackend])
+_T = TypeVar("_T")
 
 OperationType: TypeAlias = Literal["read", "write", "delete"]
 
@@ -81,8 +82,8 @@ class CachingSyncBackend(Backend, CachingBackendBase[Backend]):
     def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         fake_default = Sentinel("fake_default")
 
         value = self.cache.read(path)
@@ -131,8 +132,8 @@ class CachingAsyncBackend(AsyncBackend, CachingBackendBase[AsyncBackend]):
     async def read(
         self,
         path: Path,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         fake_default = Sentinel("fake_default")
 
         value = self.cache.read(path)

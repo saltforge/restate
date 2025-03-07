@@ -1,5 +1,4 @@
-from typing import Callable
-from typing_extensions import Any, Self, Sequence
+from typing_extensions import Any, Self, Sequence, Callable, TypeVar
 import operator
 from pathlib import PurePosixPath as Path
 
@@ -10,6 +9,9 @@ from restate.shared.constants import ROOT_PATH
 from restate.shared.sentinel import Sentinel
 from restate.backends.base import Backend
 from restate.backends.memory import InMemoryBackend
+
+
+_T = TypeVar("_T")
 
 
 class ControllerSync(BaseController):
@@ -24,9 +26,9 @@ class ControllerSync(BaseController):
     def get_state(
         self,
         path: Path | str,
-        default: Any | None = None,
+        default: _T = None,
         write_default: bool = False,
-    ) -> Any | None:
+    ) -> Any | _T:
         """
         Read the state at the `path`
 

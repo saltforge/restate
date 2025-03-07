@@ -13,6 +13,7 @@ from .base import Backend, AsyncBackend
 
 _R = TypeVar("_R", str, bytes)
 _C = TypeVar("_C", default=Any)
+_T = TypeVar("_T")
 
 
 @dataclass
@@ -149,8 +150,8 @@ class FileSystemSyncBackend(FileSystemBackendBase, Backend):
     def read(
         self,
         path: PurePosixPath,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         doc_path = self.get_doc_path(path)
 
         resulting_data = {}
@@ -274,8 +275,8 @@ class FileSystemAsyncBackend(FileSystemBackendBase, AsyncBackend):
     async def read(
         self,
         path: PurePosixPath,
-        default: Any | None = None,
-    ) -> Any | None:
+        default: _T = None,
+    ) -> Any | _T:
         doc_path = self.get_doc_path(path)
 
         resulting_data = {}
