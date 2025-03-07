@@ -26,7 +26,7 @@ jobs:
       - name: Publish to PyPI
         run: uv publish --token ${{ secrets.PYPI_TOKEN }}
 
-      - run: echo "VERSION=$(poetry version -s)" >> $GITHUB_ENV
+      - run: echo "VERSION=$(uvx --from=toml-cli toml get --toml-path=pyproject.toml project.version)" >> $GITHUB_ENV
         id: version-check
 
       - name: Create Release
