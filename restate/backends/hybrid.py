@@ -13,10 +13,17 @@ class HybridBackendBase(Generic[_B]):
         self.mounts: dict[Path, _B] = {}
         self.mount(ROOT_PATH, root_backend)
 
-    def mount(self, path: Path, backend: _B):
+    def resolve_path(self, path: Path | str) -> Path:
+        return ROOT_PATH / str(path).lstrip("/")
+
+    def mount(self, path: Path | str, backend: _B):
+        path = self.resolve_path(path)
+
         self.mounts[path] = backend
 
-    def unmount(self, path: Path) -> _B | None:
+    def unmount(self, path: Path | str) -> _B | None:
+        path = self.resolve_path(path)
+
         return self.mounts.pop(path, None)
 
     def resolve_backend(self, path: Path) -> tuple[Path, _B]:
