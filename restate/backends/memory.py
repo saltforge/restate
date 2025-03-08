@@ -43,7 +43,7 @@ class InMemoryBackend(Backend):
         store = self.get_store(path)
 
         if not store:
-            return None
+            return default
 
         return store.data
 
