@@ -57,7 +57,7 @@ class CallbackStore:
         return callback_id
 
     def get_matching_paths(self, path: PurePosixPath) -> Iterable[PurePosixPath]:
-        if path in self.reverse_subscriptions:
+        if path in self.subscriptions:
             yield path
 
         parts = path.parts
