@@ -47,7 +47,7 @@ print(controller.get_state("/users/1"))  # {"name": "Alice", "role": "admin"}
 controller.derive(
     dest="/stats/admin_count",
     source="/users",
-    transform=lambda users: sum(1 for u in users.values() if u["role"] == "admin")
+    transform=lambda users: sum(u["role"] == "admin" for u in users.values())
 )
 
 # now if we try to read it, it will always be a correct amount
