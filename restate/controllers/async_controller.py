@@ -78,7 +78,7 @@ class ControllerAsync(BaseController):
         if path != ROOT_PATH:
             await self.notify(path.parent, event.get_bubbled())
 
-    async def set_state(
+    async def set_state(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         path: Path | str,
         value: Any | None,

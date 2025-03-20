@@ -37,7 +37,8 @@ class AsyncControllerProtocol(Protocol):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
-    ) -> None: ...
+        payload: Any = None,
+    ) -> bool: ...
 
 
 @dataclass
@@ -96,7 +97,8 @@ class StateEvent(Generic[AnyController]):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
-    ) -> Coroutine[Any, Any, None]: ...
+        payload: Any = None,
+    ) -> Coroutine[Any, Any, bool]: ...
 
     @overload
     def set_state(
@@ -105,7 +107,8 @@ class StateEvent(Generic[AnyController]):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
-    ) -> Any | None: ...
+        payload: Any = None,
+    ) -> bool: ...
 
     def set_state(
         self,
@@ -113,8 +116,18 @@ class StateEvent(Generic[AnyController]):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
-    ):
-        return cast(Any, self.controller.set_state(path, value, eq_func, default))
+        payload: Any = None,
+    ) -> Coroutine[Any, Any, bool] | bool:
+        return cast(
+            Any,
+            self.controller.set_state(
+                path=path,
+                value=value,
+                eq_func=eq_func,
+                default=default,
+                payload=payload,
+            ),
+        )
 
 
 SyncCallback = Callable[[StateEvent[AnyController]], Any]

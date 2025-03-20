@@ -133,7 +133,8 @@ class BaseController:
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
-    ) -> Any: ...
+        payload: Any = None,
+    ) -> bool: ...
 
 
 class DeriveData:
