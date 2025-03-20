@@ -49,7 +49,7 @@ class HybridSyncBackend(Backend, HybridBackendBase[Backend]):
         default: _T = None,
     ) -> Any | _T:
         local_path, backend = self.resolve_backend(path)
-        return backend.read(local_path)
+        return backend.read(local_path, default)
 
     def write(
         self,
@@ -71,7 +71,7 @@ class HybridAsyncBackend(AsyncBackend, HybridBackendBase[AsyncBackend]):
         default: _T = None,
     ) -> Any | _T:
         local_path, backend = self.resolve_backend(path)
-        return await backend.read(local_path)
+        return await backend.read(local_path, default)
 
     async def write(
         self,
