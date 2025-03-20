@@ -462,6 +462,9 @@ def handler(event):
 controller.subscribe("/users", handler)
 ```
 
+You can also pass an arbitrary `payload` argument to `.set_state`, `.ping`, `.track` and `.derive*` methods.
+This payload will be available to the callback via `.payload` property.
+
 ### Pings
 
 Force notification of subscribers without changing state:
