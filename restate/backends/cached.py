@@ -16,7 +16,6 @@ from typing_extensions import (
     Union,
     Unpack,
 )
-from weakref import WeakSet
 
 from restate.shared.sentinel import Sentinel
 
@@ -48,9 +47,6 @@ class FlushArgs(TypedDict):
 class CachingBackendBase(Generic[_B]):
     """Base class for caching backends with common functionality"""
 
-    # Track all instances for cleanup on exit
-    _instances = WeakSet()
-
     def __init__(self, backend: _B, **kwargs: Unpack[FlushArgs]):
         flush_interval = kwargs.get("flush_interval", 5.0)
         flush_on_read = kwargs.get("flush_on_read", False)
@@ -69,8 +65,6 @@ class CachingBackendBase(Generic[_B]):
 
         self.operations: list[Operation] = []
         self.last_flush = time.time()
-
-        self.__class__._instances.add(self)
 
     def schedule_operation(
         self,
