@@ -5,7 +5,17 @@ import atexit
 import asyncio
 import time
 from pathlib import PurePosixPath as Path
-from typing_extensions import Any, Generic, Literal, TypeAlias, TypeVar, Union
+from typing_extensions import (
+    Any,
+    Generic,
+    Literal,
+    NotRequired,
+    TypeAlias,
+    TypeVar,
+    TypedDict,
+    Union,
+    Unpack,
+)
 from weakref import WeakSet
 
 from restate.shared.sentinel import Sentinel
@@ -28,20 +38,25 @@ class Operation:
         self.timestamp = time.time()
 
 
+class FlushArgs(TypedDict):
+    flush_interval: NotRequired[float]
+    flush_on_read: NotRequired[bool]
+    flush_on_write: NotRequired[bool]
+    flush_on_delete: NotRequired[bool]
+
+
 class CachingBackendBase(Generic[_B]):
     """Base class for caching backends with common functionality"""
 
     # Track all instances for cleanup on exit
     _instances = WeakSet()
 
-    def __init__(
-        self,
-        backend: _B,
-        flush_interval: float = 5.0,  # seconds
-        flush_on_read: bool = False,
-        flush_on_write: bool = True,
-        flush_on_delete: bool = True,
-    ):
+    def __init__(self, backend: _B, **kwargs: Unpack[FlushArgs]):
+        flush_interval = kwargs.get("flush_interval", 5.0)
+        flush_on_read = kwargs.get("flush_on_read", False)
+        flush_on_write = kwargs.get("flush_on_write", True)
+        flush_on_delete = kwargs.get("flush_on_delete", True)
+
         self.backend = backend
         self.cache = InMemoryBackend()
         self.flush_interval = flush_interval
@@ -75,7 +90,7 @@ class CachingBackendBase(Generic[_B]):
 
 
 class CachingSyncBackend(Backend, CachingBackendBase[Backend]):
-    def __init__(self, backend: Backend, **kwargs):
+    def __init__(self, backend: Backend, **kwargs: Unpack[FlushArgs]):
         super().__init__(backend, **kwargs)
         atexit.register(self.flush)
 
@@ -125,7 +140,7 @@ class CachingSyncBackend(Backend, CachingBackendBase[Backend]):
 
 
 class CachingAsyncBackend(AsyncBackend, CachingBackendBase[AsyncBackend]):
-    def __init__(self, backend: AsyncBackend, **kwargs):
+    def __init__(self, backend: AsyncBackend, **kwargs: Unpack[FlushArgs]):
         super().__init__(backend, **kwargs)
         atexit.register(self._sync_flush)
 
