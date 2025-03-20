@@ -107,6 +107,7 @@ class BaseController:
         path: Path | str,
         prev_value: Any | None,
         new_value: Any | None,
+        payload: Any,
     ) -> StateEvent[Self]:
         path = self.resolve_path(path)
 
@@ -116,6 +117,7 @@ class BaseController:
             current_path=path,
             prev_value=prev_value,
             new_value=new_value,
+            payload=payload,
         )
 
     def get_state(

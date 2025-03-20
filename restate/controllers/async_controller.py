@@ -84,6 +84,7 @@ class ControllerAsync(BaseController):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
+        payload: Any = None,
     ) -> bool:
         """
         Sets the path state to the given value and notifies the subscribers.
@@ -108,14 +109,16 @@ class ControllerAsync(BaseController):
         if are_equal:
             return False
 
-        event = self.build_event(path, prev_value, value)
+        event = self.build_event(path, prev_value, value, payload)
 
         await self.write_state(path, value)
         await self.notify(path, event)
 
         return True
 
-    async def ping(self, path: Path | str, default: Any | None = None):
+    async def ping(
+        self, path: Path | str, default: Any | None = None, payload: Any = None
+    ):
         """
         Notifies path subscribers unconditionally.
         default is passed to .get_state
@@ -123,7 +126,7 @@ class ControllerAsync(BaseController):
 
         value = await self.get_state(path, default)
 
-        await self.notify(path, self.build_event(path, value, value))
+        await self.notify(path, self.build_event(path, value, value, payload))
 
     async def derive_many(
         self,
@@ -133,6 +136,7 @@ class ControllerAsync(BaseController):
             [DeriveData],
             Awaitable[Any | None],
         ],
+        payload: Any = None,
     ):
         async def callback(event: StateEvent[Self]):
             update_data: dict[Path, Any | None] = {}
@@ -148,11 +152,14 @@ class ControllerAsync(BaseController):
             await self.set_state(
                 dest,
                 await transform(DeriveData(self, update_data)),
+                payload=payload,
             )
 
         callback_id = Sentinel(f"derive:{dest}")
         self.callbacks.remove_callback(callback_id)
         self.register_callback(callback, force_id=callback_id)
+
+        start_event = self.build_event(ROOT_PATH, None, None, payload)
 
         for p in sources:
             self.subscribe_by_id(
@@ -160,13 +167,14 @@ class ControllerAsync(BaseController):
                 callback_id,
             )
 
-        await callback(self.build_event(ROOT_PATH, None, None))
+        await callback(start_event)
 
     async def derive(
         self,
         dest: Path | str,
         source: Path | str,
         transform: Callable[[Any | None], Awaitable[Any | None]],
+        payload: Any = None,
     ):
         def full_transform(d: DeriveData) -> Awaitable[Any | None]:
             return transform(d.get(source))
@@ -175,9 +183,10 @@ class ControllerAsync(BaseController):
             dest,
             [source],
             transform=full_transform,
+            payload=payload,
         )
 
-    async def track(self, callback: StateCallback[Self]):
+    async def track(self, callback: StateCallback[Self], payload: Any = None):
         callback_id = self.register_callback(callback)
 
         async def wrapped_callback(event: StateEvent[Self]):
@@ -193,7 +202,12 @@ class ControllerAsync(BaseController):
 
         await self.callbacks.call_async(
             wrapped_id,
-            self.build_event(ROOT_PATH, prev_value=None, new_value=None),
+            self.build_event(
+                ROOT_PATH,
+                prev_value=None,
+                new_value=None,
+                payload=payload,
+            ),
         )
 
 

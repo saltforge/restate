@@ -49,6 +49,7 @@ class StateEvent(Generic[AnyController]):
     new_value: Any | None
     bubbling: bool = True
     tracker: StateTracker[BaseController] | None = None
+    payload: Any = None
 
     def get_bubbled(self) -> StateEvent[AnyController]:
         return StateEvent(

@@ -76,6 +76,7 @@ class ControllerSync(BaseController):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
+        payload: Any = None,
     ) -> bool:
         """
         Sets the path state to the given value and notifies the subscribers.
@@ -100,14 +101,19 @@ class ControllerSync(BaseController):
         if are_equal:
             return False
 
-        event = self.build_event(path, prev_value, value)
+        event = self.build_event(path, prev_value, value, payload)
 
         self.write_state(path, value)
         self.notify(path, event)
 
         return True
 
-    def ping(self, path: Path | str, default: Any | None = None):
+    def ping(
+        self,
+        path: Path | str,
+        default: Any | None = None,
+        payload: Any = None,
+    ):
         """
         Notifies path subscribers unconditionally.
         default is passed to .get_state
@@ -115,13 +121,14 @@ class ControllerSync(BaseController):
 
         value = self.get_state(path, default)
 
-        self.notify(path, self.build_event(path, value, value))
+        self.notify(path, self.build_event(path, value, value, payload))
 
     def derive_many(
         self,
         dest: Path | str,
         sources: Sequence[Path | str],
         transform: Callable[[DeriveData], Any | None],
+        payload: Any = None,
     ):
         def callback(event: StateEvent):
             update_data: dict[Path, Any | None] = {}
@@ -135,15 +142,14 @@ class ControllerSync(BaseController):
                     update_data[resolved] = self.get_state(p)
 
             self.set_state(
-                dest,
-                transform(DeriveData(self, update_data)),
+                dest, transform(DeriveData(self, update_data)), payload=payload
             )
 
         callback_id = Sentinel(f"derive:{dest}")
         self.callbacks.remove_callback(callback_id)
         self.register_callback(callback, force_id=callback_id)
 
-        start_event = self.build_event(ROOT_PATH, None, None)
+        start_event = self.build_event(ROOT_PATH, None, None, payload)
 
         for p in sources:
             self.subscribe_by_id(
@@ -158,14 +164,16 @@ class ControllerSync(BaseController):
         dest: Path | str,
         source: Path | str,
         transform: Callable[[Any | None], Any | None],
+        payload: Any = None,
     ):
         self.derive_many(
             dest,
             [source],
             transform=lambda d: transform(d.get(source)),
+            payload=payload,
         )
 
-    def track(self, callback: StateCallback[Self]):
+    def track(self, callback: StateCallback[Self], payload: Any = None):
         callback_id = self.register_callback(callback)
 
         def wrapped_callback(event: StateEvent[Self]):
@@ -182,7 +190,12 @@ class ControllerSync(BaseController):
 
         self.callbacks.call_sync(
             wrapped_id,
-            self.build_event(ROOT_PATH, prev_value=None, new_value=None),
+            self.build_event(
+                ROOT_PATH,
+                prev_value=None,
+                new_value=None,
+                payload=payload,
+            ),
         )
 
 
