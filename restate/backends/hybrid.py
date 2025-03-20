@@ -41,6 +41,20 @@ class HybridBackendBase(Generic[_B]):
             self.mounts[best_mount],
         )
 
+    def get_subpaths(self, root_path: Path) -> list[Path]:
+        subpaths: list[Path] = []
+
+        for mount in self.mounts:
+            if mount == root_path:
+                continue
+
+            if mount.is_relative_to(root_path):
+                subpaths.append(mount)
+
+        # this bit is important
+        # we should work with shortest paths first to not overwrite children
+        return sorted(subpaths, key=lambda p: len(p.parts))
+
 
 class HybridSyncBackend(Backend, HybridBackendBase[Backend]):
     def read(
@@ -49,7 +63,45 @@ class HybridSyncBackend(Backend, HybridBackendBase[Backend]):
         default: _T = None,
     ) -> Any | _T:
         local_path, backend = self.resolve_backend(path)
-        return backend.read(local_path, default)
+        base = backend.read(local_path, default)
+
+        subpaths = self.get_subpaths(path)
+
+        if isinstance(base, dict):
+            for subpath in subpaths:
+                store = base
+
+                data = self.read(subpath)
+
+                if data is None:
+                    continue
+
+                path_parts = list(
+                    filter(
+                        None,
+                        (part.strip("/") for part in subpath.relative_to(path).parts),
+                    )
+                )
+
+                if not path_parts:
+                    # mounted path is the same as local?, we just rewrite the base
+                    # shouldn't happen normally but
+
+                    if isinstance(data, dict):
+                        base = data
+
+                    continue
+
+                for part in path_parts[:-1]:
+                    if not part.strip("/"):
+                        continue
+
+                    store[part] = {}
+                    store = store[part]
+
+                store[path_parts[-1]] = data
+
+        return base
 
     def write(
         self,
@@ -71,7 +123,45 @@ class HybridAsyncBackend(AsyncBackend, HybridBackendBase[AsyncBackend]):
         default: _T = None,
     ) -> Any | _T:
         local_path, backend = self.resolve_backend(path)
-        return await backend.read(local_path, default)
+        base = await backend.read(local_path, default)
+
+        if isinstance(base, dict):
+            subpaths = self.get_subpaths(path)
+
+            for subpath in subpaths:
+                store = base
+
+                data = await self.read(subpath)
+
+                if data is None:
+                    continue
+
+                path_parts = list(
+                    filter(
+                        None,
+                        (part.strip("/") for part in subpath.relative_to(path).parts),
+                    )
+                )
+
+                if not path_parts:
+                    # mounted path is the same as local?, we just rewrite the base
+                    # shouldn't happen normally but
+
+                    if isinstance(data, dict):
+                        base = data
+
+                    continue
+
+                for part in path_parts[:-1]:
+                    if not part.strip("/"):
+                        continue
+
+                    store[part] = {}
+                    store = store[part]
+
+                store[path_parts[-1]] = data
+
+        return base
 
     async def write(
         self,

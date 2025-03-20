@@ -1,6 +1,6 @@
 [project]
 name = "restate"
-version = "0.9.6"
+version = "0.9.7"
 description = "Storage-agnostic, reactive state management for Python"
 readme = "README.md"
 requires-python = ">=3.9"
