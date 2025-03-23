@@ -16,6 +16,9 @@ from restate.shared.sentinel import Sentinel
 _T = TypeVar("_T")
 
 
+fake_default = Sentinel("state_default")
+
+
 class ControllerAsync(BaseController):
     def __init__(
         self,
@@ -43,8 +46,6 @@ class ControllerAsync(BaseController):
         Pass `default` as a value to return if state doesn't exist at `path`.
         Pass `write_default=True` to write `default` value if state doesn't exist at `path`.
         """
-        fake_default = Sentinel("state_default")
-
         value = await self.backend.read(self.resolve_path(path), fake_default)
 
         if isinstance(value, Sentinel):
@@ -112,6 +113,24 @@ class ControllerAsync(BaseController):
         event = self.build_event(path, prev_value, value, payload)
 
         await self.write_state(path, value)
+        await self.notify(path, event)
+
+        return True
+
+    async def del_state(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        path: Path | str,
+        payload: Any = None,
+    ) -> bool:
+        path = self.resolve_path(path)
+        prev_value = self.get_state(path, fake_default)
+
+        if prev_value == fake_default:
+            return False
+
+        event = self.build_event(path, prev_value, None, payload)
+
+        await self.backend.delete(path)
         await self.notify(path, event)
 
         return True

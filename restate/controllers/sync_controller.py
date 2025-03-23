@@ -14,6 +14,9 @@ from restate.backends.memory import InMemoryBackend
 _T = TypeVar("_T")
 
 
+fake_default = Sentinel("state_default")
+
+
 class ControllerSync(BaseController):
     def __init__(self, backend: Backend | None = None):
         if backend is None:
@@ -35,7 +38,6 @@ class ControllerSync(BaseController):
         Pass `default` as a value to return if state doesn't exist at `path`.
         Pass `write_default=True` to write `default` value if state doesn't exist at `path`.
         """
-        fake_default = Sentinel("state_default")
 
         value = self.backend.read(self.resolve_path(path), fake_default)
 
@@ -104,6 +106,24 @@ class ControllerSync(BaseController):
         event = self.build_event(path, prev_value, value, payload)
 
         self.write_state(path, value)
+        self.notify(path, event)
+
+        return True
+
+    def del_state(
+        self,
+        path: Path | str,
+        payload: Any = None,
+    ) -> bool:
+        path = self.resolve_path(path)
+        prev_value = self.get_state(path, fake_default)
+
+        if prev_value == fake_default:
+            return False
+
+        event = self.build_event(path, prev_value, None, payload)
+
+        self.backend.delete(path)
         self.notify(path, event)
 
         return True

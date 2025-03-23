@@ -22,6 +22,8 @@ AnyController = TypeVar(
     covariant=True,
 )
 
+_T = TypeVar("_T")
+
 
 class AsyncControllerProtocol(Protocol):
     async def get_state(
@@ -37,6 +39,12 @@ class AsyncControllerProtocol(Protocol):
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
+        payload: Any = None,
+    ) -> bool: ...
+
+    async def del_state(
+        self,
+        path: Path | str,
         payload: Any = None,
     ) -> bool: ...
 
@@ -67,17 +75,17 @@ class StateEvent(Generic[AnyController]):
     def get_state(
         self: StateEvent[AsyncControllerProtocol],
         path: Path | str,
-        default: Any | None = None,
+        default: _T = None,
         write_default: bool = False,
-    ) -> Coroutine[Any, Any, Any | None]: ...
+    ) -> Coroutine[Any, Any, Any | _T]: ...
 
     @overload
     def get_state(
         self: StateEvent[AnyController],
         path: Path | str,
-        default: Any | None = None,
+        default: Any | _T = None,
         write_default: bool = False,
-    ) -> Any | None: ...
+    ) -> Any | _T: ...
 
     def get_state(
         self,
@@ -128,6 +136,27 @@ class StateEvent(Generic[AnyController]):
                 payload=payload,
             ),
         )
+
+    @overload
+    def del_state(
+        self: StateEvent[AsyncControllerProtocol],
+        path: Path | str,
+        payload: Any,
+    ) -> Coroutine[Any, Any, bool]: ...
+
+    @overload
+    def del_state(
+        self: StateEvent[AnyController],
+        path: Path | str,
+        payload: Any,
+    ) -> bool: ...
+
+    def del_state(
+        self,
+        path: Path | str,
+        payload: Any,
+    ):
+        return self.controller.del_state(path, payload)
 
 
 SyncCallback = Callable[[StateEvent[AnyController]], Any]

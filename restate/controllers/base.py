@@ -136,6 +136,12 @@ class BaseController:
         payload: Any = None,
     ) -> bool: ...
 
+    def del_state(
+        self,
+        path: Path | str,
+        payload: Any = None,
+    ) -> bool: ...
+
 
 class DeriveData:
     def __init__(self, controller: BaseController, data: dict[Path, Any]):
