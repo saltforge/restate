@@ -95,7 +95,7 @@ class CachingSyncBackend(Backend, CachingBackendBase[Backend]):
     ) -> Any | _T:
         fake_default = Sentinel("fake_default")
 
-        value = self.cache.read(path)
+        value = self.cache.read(path, default=fake_default)
 
         if value is fake_default:
             value = self.backend.read(path, default)
@@ -145,7 +145,7 @@ class CachingAsyncBackend(AsyncBackend, CachingBackendBase[AsyncBackend]):
     ) -> Any | _T:
         fake_default = Sentinel("fake_default")
 
-        value = self.cache.read(path)
+        value = self.cache.read(path, default=fake_default)
 
         if value is fake_default:
             value = await self.backend.read(path, default)
