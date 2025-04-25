@@ -145,7 +145,7 @@ class FileSystemSyncBackend(FileSystemBackendBase, Backend):
 
             if child_path not in visited:
                 visited.add(child_path)
-                yield child_path
+                yield child_path.with_suffix("")
 
     def read(
         self,
