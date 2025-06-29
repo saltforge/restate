@@ -46,6 +46,7 @@ class AsyncControllerProtocol(Protocol):
         self,
         path: Path | str,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool: ...
 
 
@@ -142,6 +143,7 @@ class StateEvent(Generic[AnyController]):
         self: StateEvent[AsyncControllerProtocol],
         path: Path | str,
         payload: Any,
+        skip_notify: bool = False,
     ) -> Coroutine[Any, Any, bool]: ...
 
     @overload
@@ -149,14 +151,15 @@ class StateEvent(Generic[AnyController]):
         self: StateEvent[AnyController],
         path: Path | str,
         payload: Any,
+        skip_notify: bool = False,
     ) -> bool: ...
 
-    def del_state(
-        self,
-        path: Path | str,
-        payload: Any,
-    ):
-        return self.controller.del_state(path, payload)
+    def del_state(self, path: Path | str, payload: Any, skip_notify: bool = False):
+        return self.controller.del_state(
+            path,
+            payload,
+            skip_notify,
+        )
 
 
 SyncCallback = Callable[[StateEvent[AnyController]], Any]

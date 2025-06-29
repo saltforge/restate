@@ -140,6 +140,7 @@ class BaseController:
         self,
         path: Path | str,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool: ...
 
 

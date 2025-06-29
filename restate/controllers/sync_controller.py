@@ -114,6 +114,7 @@ class ControllerSync(BaseController):
         self,
         path: Path | str,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool:
         path = self.resolve_path(path)
         prev_value = self.get_state(path, fake_default)
@@ -124,7 +125,9 @@ class ControllerSync(BaseController):
         event = self.build_event(path, prev_value, None, payload)
 
         self.backend.delete(path)
-        self.notify(path, event)
+
+        if not skip_notify:
+            self.notify(path, event)
 
         return True
 

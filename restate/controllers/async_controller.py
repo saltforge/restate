@@ -121,6 +121,7 @@ class ControllerAsync(BaseController):
         self,
         path: Path | str,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool:
         path = self.resolve_path(path)
         prev_value = self.get_state(path, fake_default)
@@ -131,7 +132,9 @@ class ControllerAsync(BaseController):
         event = self.build_event(path, prev_value, None, payload)
 
         await self.backend.delete(path)
-        await self.notify(path, event)
+
+        if not skip_notify:
+            await self.notify(path, event)
 
         return True
 
