@@ -107,6 +107,7 @@ class StateEvent(Generic[AnyController]):
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> Coroutine[Any, Any, bool]: ...
 
     @overload
@@ -117,6 +118,7 @@ class StateEvent(Generic[AnyController]):
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool: ...
 
     def set_state(
@@ -126,6 +128,7 @@ class StateEvent(Generic[AnyController]):
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> Coroutine[Any, Any, bool] | bool:
         return cast(
             Any,
@@ -154,7 +157,12 @@ class StateEvent(Generic[AnyController]):
         skip_notify: bool = False,
     ) -> bool: ...
 
-    def del_state(self, path: Path | str, payload: Any, skip_notify: bool = False):
+    def del_state(
+        self,
+        path: Path | str,
+        payload: Any,
+        skip_notify: bool = False,
+    ):
         return self.controller.del_state(
             path,
             payload,

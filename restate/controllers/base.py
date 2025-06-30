@@ -134,6 +134,7 @@ class BaseController:
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool: ...
 
     def del_state(

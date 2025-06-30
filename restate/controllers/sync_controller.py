@@ -79,6 +79,7 @@ class ControllerSync(BaseController):
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool:
         """
         Sets the path state to the given value and notifies the subscribers.
@@ -106,7 +107,9 @@ class ControllerSync(BaseController):
         event = self.build_event(path, prev_value, value, payload)
 
         self.write_state(path, value)
-        self.notify(path, event)
+
+        if not skip_notify:
+            self.notify(path, event)
 
         return True
 

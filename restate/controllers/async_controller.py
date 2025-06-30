@@ -86,6 +86,7 @@ class ControllerAsync(BaseController):
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
         payload: Any = None,
+        skip_notify: bool = False,
     ) -> bool:
         """
         Sets the path state to the given value and notifies the subscribers.
@@ -113,7 +114,9 @@ class ControllerAsync(BaseController):
         event = self.build_event(path, prev_value, value, payload)
 
         await self.write_state(path, value)
-        await self.notify(path, event)
+
+        if not skip_notify:
+            await self.notify(path, event)
 
         return True
 
