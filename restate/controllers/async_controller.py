@@ -127,7 +127,7 @@ class ControllerAsync(BaseController):
         skip_notify: bool = False,
     ) -> bool:
         path = self.resolve_path(path)
-        prev_value = self.get_state(path, fake_default)
+        prev_value = await self.get_state(path, fake_default)
 
         if prev_value == fake_default:
             return False
