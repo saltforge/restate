@@ -4,6 +4,7 @@ from pathlib import PurePosixPath as Path
 
 from .internal_types import StateCallback, StateEvent
 from .base import BaseController, DeriveData
+from .callback_store import CallbackID
 
 from restate.shared.constants import ROOT_PATH
 from restate.shared.sentinel import Sentinel
@@ -155,7 +156,7 @@ class ControllerSync(BaseController):
         sources: Sequence[Path | str],
         transform: Callable[[DeriveData], Any | None],
         payload: Any = None,
-    ):
+    ) -> CallbackID:
         def callback(event: StateEvent):
             update_data: dict[Path, Any | None] = {}
 
@@ -185,14 +186,16 @@ class ControllerSync(BaseController):
 
         callback(start_event)
 
+        return callback_id
+
     def derive(
         self,
         dest: Path | str,
         source: Path | str,
         transform: Callable[[Any | None], Any | None],
         payload: Any = None,
-    ):
-        self.derive_many(
+    ) -> CallbackID:
+        return self.derive_many(
             dest,
             [source],
             transform=lambda d: transform(d.get(source)),

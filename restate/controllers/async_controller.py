@@ -6,6 +6,7 @@ from typing_extensions import Any, Awaitable, Self, Sequence, TypeVar
 import operator
 
 from .base import BaseController, DeriveData
+from .callback_store import CallbackID
 
 from restate.shared.constants import ROOT_PATH
 from restate.backends.asyncify import AsyncifyBackend
@@ -162,7 +163,7 @@ class ControllerAsync(BaseController):
             Awaitable[Any | None],
         ],
         payload: Any = None,
-    ):
+    ) -> CallbackID:
         async def callback(event: StateEvent[Self]):
             update_data: dict[Path, Any | None] = {}
 
@@ -194,17 +195,19 @@ class ControllerAsync(BaseController):
 
         await callback(start_event)
 
+        return callback_id
+
     async def derive(
         self,
         dest: Path | str,
         source: Path | str,
         transform: Callable[[Any | None], Awaitable[Any | None]],
         payload: Any = None,
-    ):
+    ) -> CallbackID:
         def full_transform(d: DeriveData) -> Awaitable[Any | None]:
             return transform(d.get(source))
 
-        await self.derive_many(
+        return await self.derive_many(
             dest,
             [source],
             transform=full_transform,
