@@ -281,7 +281,7 @@ class FileSystemAsyncBackend(FileSystemBackendBase, AsyncBackend):
 
         resulting_data = {}
 
-        if aio_os.path.exists(doc_path):
+        if await aio_os.path.exists(doc_path):
             async with aiofiles.open(doc_path, self.serializer.read_mode) as f:
                 raw_data = await f.read()
 
