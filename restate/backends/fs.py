@@ -250,7 +250,7 @@ class FileSystemAsyncBackend(FileSystemBackendBase, AsyncBackend):
     async def iter_children(self, path: PurePosixPath) -> Iterable[PurePosixPath]:
         children_dir = self.get_children_dir(path)
 
-        if not aio_os.path.exists(children_dir):
+        if not await aio_os.path.exists(children_dir):
             return []
 
         children = await aio_os.listdir(children_dir)
