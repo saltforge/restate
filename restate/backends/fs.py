@@ -237,7 +237,7 @@ class FileSystemAsyncBackend(FileSystemBackendBase, AsyncBackend):
         {'1': {'name': 'John'}}
     """
 
-    async def __init__(
+    def __init__(
         self,
         base_path: str | Path,
         serializer: Serializer[_R] = json_serializer,
