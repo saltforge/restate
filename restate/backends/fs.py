@@ -200,6 +200,16 @@ class FileSystemSyncBackend(FileSystemBackendBase, Backend):
         except Exception:
             pass
 
+        parent_folder = doc_path.parent
+
+        while parent_folder != self.base_path:
+            try:
+                parent_folder.rmdir()
+            except OSError:  # directory not empty
+                return
+            else:
+                parent_folder = parent_folder.parent
+
 
 class FileSystemAsyncBackend(FileSystemBackendBase, AsyncBackend):
     """
@@ -325,3 +335,13 @@ class FileSystemAsyncBackend(FileSystemBackendBase, AsyncBackend):
             )
         except Exception:
             pass
+
+        parent_folder = doc_path.parent
+
+        while parent_folder != self.base_path:
+            try:
+                await aio_os.rmdir(parent_folder)
+            except OSError:  # directory not empty
+                return
+            else:
+                parent_folder = parent_folder.parent
