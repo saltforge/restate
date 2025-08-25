@@ -63,6 +63,11 @@ class InMemoryBackend(Backend):
         if path != ROOT_PATH:  # do not delete root
             self.stores.pop(path)
 
+            parent_store = self.get_store(path.parent)
+
+            if parent_store:
+                parent_store.children.remove(path)
+
 
 class Store:
     def __init__(self, backend: InMemoryBackend, path: PurePath) -> None:
