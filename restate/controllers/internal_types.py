@@ -16,6 +16,9 @@ from typing_extensions import (
 )
 
 
+type EqualityFunction = Callable[[Any, Any], bool]
+
+
 AnyController = TypeVar(
     "AnyController",
     bound="BaseController | AsyncControllerProtocol",
@@ -23,6 +26,12 @@ AnyController = TypeVar(
 )
 
 _T = TypeVar("_T")
+
+type PathLike = PathLikeClass | Path | str
+
+
+class PathLikeClass(Protocol):
+    path: PathLike
 
 
 class AsyncControllerProtocol(Protocol):
@@ -50,13 +59,16 @@ class AsyncControllerProtocol(Protocol):
     ) -> bool: ...
 
 
+_T = TypeVar("_T", default=Any)
+
+
 @dataclass
-class StateEvent(Generic[AnyController]):
+class StateEvent(Generic[AnyController, _T]):
     controller: AnyController
     emitting_path: Path
     current_path: Path
-    prev_value: Any | None
-    new_value: Any | None
+    prev_value: _T | None
+    new_value: _T | None
     bubbling: bool = True
     tracker: StateTracker[BaseController] | None = None
     payload: Any = None
@@ -74,7 +86,7 @@ class StateEvent(Generic[AnyController]):
 
     @overload
     def get_state(
-        self: StateEvent[AsyncControllerProtocol],
+        self: StateEvent[AsyncControllerProtocol, _T],
         path: Path | str,
         default: _T = None,
         write_default: bool = False,
@@ -82,7 +94,7 @@ class StateEvent(Generic[AnyController]):
 
     @overload
     def get_state(
-        self: StateEvent[AnyController],
+        self: StateEvent[AnyController, _T],
         path: Path | str,
         default: Any | _T = None,
         write_default: bool = False,
@@ -115,7 +127,7 @@ class StateEvent(Generic[AnyController]):
         self: StateEvent[AnyController],
         path: Path | str,
         value: Any | None,
-        eq_func: Callable[[Any | None, Any | None], bool] | None = None,
+        eq_func: EqualityFunction | None = None,
         default: Any | None = None,
         payload: Any = None,
         skip_notify: bool = False,
@@ -125,7 +137,7 @@ class StateEvent(Generic[AnyController]):
         self,
         path: Path | str,
         value: Any | None,
-        eq_func: Callable[[Any | None, Any | None], bool] | None = None,
+        eq_func: EqualityFunction | None = None,
         default: Any | None = None,
         payload: Any = None,
         skip_notify: bool = False,
@@ -143,7 +155,7 @@ class StateEvent(Generic[AnyController]):
 
     @overload
     def del_state(
-        self: StateEvent[AsyncControllerProtocol],
+        self: StateEvent[AsyncControllerProtocol, _T],
         path: Path | str,
         payload: Any,
         skip_notify: bool = False,
@@ -151,7 +163,7 @@ class StateEvent(Generic[AnyController]):
 
     @overload
     def del_state(
-        self: StateEvent[AnyController],
+        self: StateEvent[AnyController, _T],
         path: Path | str,
         payload: Any,
         skip_notify: bool = False,
@@ -170,11 +182,13 @@ class StateEvent(Generic[AnyController]):
         )
 
 
-SyncCallback = Callable[[StateEvent[AnyController]], Any]
-AsyncCallback = Callable[[StateEvent[AnyController]], Coroutine[Any, Any, Any]]
+SyncCallback = Callable[[StateEvent[AnyController, _T]], Any]
+AsyncCallback = Callable[[StateEvent[AnyController, _T]], Coroutine[Any, Any, Any]]
 
 
-StateCallback: TypeAlias = SyncCallback[AnyController] | AsyncCallback[AnyController]
+StateCallback: TypeAlias = (
+    SyncCallback[AnyController, _T] | AsyncCallback[AnyController, _T]
+)
 
 
 from .tracker import StateTracker  # noqa: E402

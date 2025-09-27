@@ -2,7 +2,9 @@ from typing_extensions import Any, Self, Sequence, Callable, TypeVar
 import operator
 from pathlib import PurePosixPath as Path
 
-from .internal_types import StateCallback, StateEvent
+from restate.atoms.sync_atom import SyncAtom
+
+from .internal_types import EqualityFunction, PathLike, StateCallback, StateEvent
 from .base import BaseController, DeriveData
 from .callback_store import CallbackID
 
@@ -29,7 +31,7 @@ class ControllerSync(BaseController):
 
     def get_state(
         self,
-        path: Path | str,
+        path: PathLike,
         default: _T = None,
         write_default: bool = False,
     ) -> Any | _T:
@@ -52,15 +54,15 @@ class ControllerSync(BaseController):
 
     def write_state(
         self,
-        path: Path | str,
+        path: PathLike,
         value: Any | None,
     ):
         self.backend.write(self.resolve_path(path), value)
 
     def notify(
         self,
-        path: Path | str,
-        event: StateEvent[Self],
+        path: PathLike,
+        event: StateEvent[Self, _T],
     ):
         path = self.resolve_path(path)
 
@@ -75,9 +77,9 @@ class ControllerSync(BaseController):
 
     def set_state(
         self,
-        path: Path | str,
+        path: PathLike,
         value: Any | None,
-        eq_func: Callable[[Any | None, Any | None], bool] | None = None,
+        eq_func: EqualityFunction | None = None,
         default: Any | None = None,
         payload: Any = None,
         skip_notify: bool = False,
@@ -116,7 +118,7 @@ class ControllerSync(BaseController):
 
     def del_state(
         self,
-        path: Path | str,
+        path: PathLike,
         payload: Any = None,
         skip_notify: bool = False,
     ) -> bool:
@@ -137,8 +139,8 @@ class ControllerSync(BaseController):
 
     def ping(
         self,
-        path: Path | str,
-        default: Any | None = None,
+        path: PathLike,
+        default: _T | None = None,
         payload: Any = None,
     ):
         """
@@ -146,14 +148,16 @@ class ControllerSync(BaseController):
         default is passed to .get_state
         """
 
-        value = self.get_state(path, default)
+        value: _T | None = self.get_state(path, default)
 
-        self.notify(path, self.build_event(path, value, value, payload))
+        event = self.build_event(path, value, value, payload)
+
+        self.notify(path, event)
 
     def derive_many(
         self,
-        dest: Path | str,
-        sources: Sequence[Path | str],
+        dest: PathLike,
+        sources: Sequence[PathLike],
         transform: Callable[[DeriveData], Any | None],
         payload: Any = None,
     ) -> CallbackID:
@@ -190,8 +194,8 @@ class ControllerSync(BaseController):
 
     def derive(
         self,
-        dest: Path | str,
-        source: Path | str,
+        dest: PathLike,
+        source: PathLike,
         transform: Callable[[Any | None], Any | None],
         payload: Any = None,
     ) -> CallbackID:
@@ -202,10 +206,10 @@ class ControllerSync(BaseController):
             payload=payload,
         )
 
-    def track(self, callback: StateCallback[Self], payload: Any = None):
+    def track(self, callback: StateCallback[Self, _T], payload: Any = None):
         callback_id = self.register_callback(callback)
 
-        def wrapped_callback(event: StateEvent[Self]):
+        def wrapped_callback(event: StateEvent[Self, _T]):
             tracker = tracker_controller.create_tracker()
             event.tracker = tracker
             result = self.callbacks.call_sync(callback_id, event)
@@ -225,6 +229,17 @@ class ControllerSync(BaseController):
                 new_value=None,
                 payload=payload,
             ),
+        )
+
+    def atom(
+        self,
+        path: PathLike,
+        default: _T | None = None,
+    ) -> SyncAtom[_T]:
+        return SyncAtom(
+            controller=self,
+            path=path,
+            default=default,
         )
 
 

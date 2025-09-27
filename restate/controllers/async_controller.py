@@ -14,6 +14,8 @@ from restate.backends.base import AsyncBackend, Backend
 from restate.backends.memory import InMemoryBackend
 from restate.shared.sentinel import Sentinel
 
+from restate.atoms import AsyncAtom
+
 _T = TypeVar("_T")
 
 
@@ -37,7 +39,7 @@ class ControllerAsync(BaseController):
 
     async def get_state(
         self,
-        path: Path | str,
+        path: PathLike,
         default: _T = None,
         write_default: bool = False,
     ) -> Any | _T:
@@ -59,15 +61,15 @@ class ControllerAsync(BaseController):
 
     async def write_state(
         self,
-        path: Path | str,
+        path: PathLike,
         value: Any | None,
     ):
         await self.backend.write(self.resolve_path(path), value)
 
     async def notify(
         self,
-        path: Path | str,
-        event: StateEvent[Self],
+        path: PathLike,
+        event: StateEvent[Self, _T],
     ):
         path = self.resolve_path(path)
 
@@ -82,9 +84,9 @@ class ControllerAsync(BaseController):
 
     async def set_state(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
-        path: Path | str,
+        path: PathLike,
         value: Any | None,
-        eq_func: Callable[[Any | None, Any | None], bool] | None = None,
+        eq_func: EqualityFunction | None = None,
         default: Any | None = None,
         payload: Any = None,
         skip_notify: bool = False,
@@ -123,7 +125,7 @@ class ControllerAsync(BaseController):
 
     async def del_state(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
-        path: Path | str,
+        path: PathLike,
         payload: Any = None,
         skip_notify: bool = False,
     ) -> bool:
@@ -143,21 +145,24 @@ class ControllerAsync(BaseController):
         return True
 
     async def ping(
-        self, path: Path | str, default: Any | None = None, payload: Any = None
+        self,
+        path: PathLike,
+        default: _T | None = None,
+        payload: Any = None,
     ):
         """
         Notifies path subscribers unconditionally.
         default is passed to .get_state
         """
 
-        value = await self.get_state(path, default)
+        value: _T | None = await self.get_state(path, default)
 
         await self.notify(path, self.build_event(path, value, value, payload))
 
     async def derive_many(
         self,
-        dest: Path | str,
-        sources: Sequence[Path | str],
+        dest: PathLike,
+        sources: Sequence[PathLike],
         transform: Callable[
             [DeriveData],
             Awaitable[Any | None],
@@ -199,8 +204,8 @@ class ControllerAsync(BaseController):
 
     async def derive(
         self,
-        dest: Path | str,
-        source: Path | str,
+        dest: PathLike,
+        source: PathLike,
         transform: Callable[[Any | None], Awaitable[Any | None]],
         payload: Any = None,
     ) -> CallbackID:
@@ -214,10 +219,10 @@ class ControllerAsync(BaseController):
             payload=payload,
         )
 
-    async def track(self, callback: StateCallback[Self], payload: Any = None):
+    async def track(self, callback: StateCallback[Self, _T], payload: Any = None):
         callback_id = self.register_callback(callback)
 
-        async def wrapped_callback(event: StateEvent[Self]):
+        async def wrapped_callback(event: StateEvent[Self, _T]):
             tracker = tracker_controller.create_tracker()
             event.tracker = tracker
             await self.callbacks.call_async(callback_id, event)
@@ -238,6 +243,13 @@ class ControllerAsync(BaseController):
             ),
         )
 
+    def atom(self, path: PathLike, default: _T | None = None) -> AsyncAtom[_T]:
+        return AsyncAtom(
+            controller=self,
+            path=path,
+            default=default,
+        )
 
-from .internal_types import StateEvent, StateCallback  # noqa: E402
+
+from .internal_types import EqualityFunction, PathLike, StateEvent, StateCallback  # noqa: E402
 from .tracker import StateTrackerController  # noqa: E402

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import TypeVar
 
 from typing_extensions import (
     Any,
@@ -9,18 +10,27 @@ from typing_extensions import (
 from pathlib import PurePosixPath as Path
 
 
+_T = TypeVar("_T")
+
+
 class BaseController:
     def __init__(self):
         self.callbacks: CallbackStore = CallbackStore()
 
-    def resolve_path(self, path: Path | str) -> Path:
-        if isinstance(path, Path):
-            path = str(path)
+    def resolve_path(self, path: PathLike) -> Path:
+        while not isinstance(path, Path):
+            if isinstance(path, str):
+                if not path:
+                    path = "/"
 
-        if not path.startswith("/"):
-            path = f"/{path}"
+                path = Path(path)
+            else:
+                path = path.path
 
-        return Path(path)
+        if path.parts[:1] != ("/"):
+            path = Path("/") / path
+
+        return path
 
     def register_callback(
         self,
@@ -42,7 +52,7 @@ class BaseController:
 
     def subscribe_by_id(
         self,
-        path: Path | str,
+        path: PathLike,
         callback_id: CallbackID,
         ignore_missing: bool = False,
     ) -> CallbackID:
@@ -62,7 +72,7 @@ class BaseController:
 
     def subscribe(
         self,
-        path: Path | str,
+        path: PathLike,
         callback: StateCallback[Self],
         force_id: CallbackID | None = None,
         replace: bool = False,
@@ -83,7 +93,7 @@ class BaseController:
 
     def unsubscribe_by_id(
         self,
-        path: Path | str,
+        path: PathLike,
         callback_id: CallbackID,
     ):
         """
@@ -93,7 +103,7 @@ class BaseController:
 
     def unsubscribe(
         self,
-        path: Path | str,
+        path: PathLike,
         callback: StateCallback[Self],
     ):
         """
@@ -104,11 +114,11 @@ class BaseController:
 
     def build_event(
         self,
-        path: Path | str,
-        prev_value: Any | None,
-        new_value: Any | None,
+        path: PathLike,
+        prev_value: _T | None,
+        new_value: _T | None,
         payload: Any,
-    ) -> StateEvent[Self]:
+    ) -> StateEvent[Self, _T]:
         path = self.resolve_path(path)
 
         return StateEvent(
@@ -122,14 +132,14 @@ class BaseController:
 
     def get_state(
         self,
-        path: Path | str,
+        path: PathLike,
         default: Any | None = None,
         write_default: bool = False,
     ) -> Any: ...
 
     def set_state(
         self,
-        path: Path | str,
+        path: PathLike,
         value: Any | None,
         eq_func: Callable[[Any | None, Any | None], bool] | None = None,
         default: Any | None = None,
@@ -139,7 +149,7 @@ class BaseController:
 
     def del_state(
         self,
-        path: Path | str,
+        path: PathLike,
         payload: Any = None,
         skip_notify: bool = False,
     ) -> bool: ...
@@ -150,7 +160,7 @@ class DeriveData:
         self.controller = controller
         self.data = {self.controller.resolve_path(p): v for p, v in data.items()}
 
-    def get(self, path: Path | str) -> Any | None:
+    def get(self, path: PathLike) -> Any | None:
         path = self.controller.resolve_path(path)
 
         return self.data.get(path)
@@ -159,5 +169,5 @@ class DeriveData:
         return self.get(attr)
 
 
-from .internal_types import StateCallback, StateEvent  # noqa: E402
+from .internal_types import PathLike, StateCallback, StateEvent  # noqa: E402
 from .callback_store import CallbackID, CallbackStore  # noqa: E402
