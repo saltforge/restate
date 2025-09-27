@@ -32,7 +32,7 @@ class AsyncAtom(BaseAtom[_T]):
 
     async def set(
         self,
-        value: _T | None,
+        value: _T,
         eq_func: EqualityFunction | None = None,
         payload: Any = None,
         skip_notify: bool = False,
