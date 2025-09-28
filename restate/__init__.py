@@ -14,6 +14,8 @@ from .backends.fs import Serializer as Serializer
 from .controllers import (
     ControllerSync as ControllerSync,
     ControllerAsync as ControllerAsync,
+    Atom as Atom,
+    AtomAsync as AtomAsync,
     StateEvent as StateEvent,
 )
 
