@@ -341,5 +341,9 @@ class Atom(BaseAtom[ControllerSync, _T]):
             payload=payload,
         )
 
+    def on_change(self, callback: StateCallback[ControllerSync, Any]):
+        self.subscribe(callback)
+        return callback
+
 
 from .tracker import StateTrackerController  # noqa: E402

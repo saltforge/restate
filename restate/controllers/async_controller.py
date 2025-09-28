@@ -344,6 +344,10 @@ class AtomAsync(BaseAtom[ControllerAsync, _T]):
             payload=payload,
         )
 
+    def on_change(self, callback: StateCallback[ControllerAsync, Any]):
+        self.subscribe(callback)
+        return callback
+
 
 from .internal_types import EqualityFunction, PathLike, StateEvent, StateCallback  # noqa: E402
 from .tracker import StateTrackerController  # noqa: E402
