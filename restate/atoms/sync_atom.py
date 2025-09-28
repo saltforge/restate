@@ -66,7 +66,7 @@ class SyncAtom(BaseAtom[_T]):
 
     def subscribe(
         self,
-        callback: StateCallback[ControllerSync, _T],
+        callback: StateCallback[ControllerSync, Any],
         force_id: CallbackID | None = None,
         replace: bool = False,
     ) -> CallbackID:

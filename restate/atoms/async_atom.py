@@ -66,7 +66,7 @@ class AsyncAtom(BaseAtom[_T]):
 
     def subscribe(
         self,
-        callback: StateCallback[ControllerAsync, _T],
+        callback: StateCallback[ControllerAsync, Any],
         force_id: CallbackID | None = None,
         replace: bool = False,
     ) -> CallbackID:
