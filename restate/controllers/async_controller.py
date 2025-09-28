@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath as Path
-from typing import Callable
-from typing_extensions import Any, Awaitable, Self, Sequence, TypeVar
+from typing_extensions import Callable, Any, Awaitable, Self, Sequence, TypeVar
 import operator
 
-from .base import BaseController, DeriveData
+from .base import BaseAtom, BaseController, DeriveData
 from .callback_store import CallbackID
 
 from restate.shared.constants import ROOT_PATH
@@ -14,9 +13,9 @@ from restate.backends.base import AsyncBackend, Backend
 from restate.backends.memory import InMemoryBackend
 from restate.shared.sentinel import Sentinel
 
-from restate.atoms import AsyncAtom
 
 _T = TypeVar("_T")
+_R = TypeVar("_R")
 
 
 fake_default = Sentinel("state_default")
@@ -147,7 +146,7 @@ class ControllerAsync(BaseController):
     async def ping(
         self,
         path: PathLike,
-        default: _T | None = None,
+        default: Any | None = None,
         payload: Any = None,
     ):
         """
@@ -155,7 +154,7 @@ class ControllerAsync(BaseController):
         default is passed to .get_state
         """
 
-        value: _T | None = await self.get_state(path, default)
+        value = await self.get_state(path, default)
 
         await self.notify(path, self.build_event(path, value, value, payload))
 
@@ -243,11 +242,106 @@ class ControllerAsync(BaseController):
             ),
         )
 
-    def atom(self, path: PathLike, default: _T | None = None) -> AsyncAtom[_T]:
-        return AsyncAtom(
+    def atom(self, path: PathLike, default: _T = None) -> AtomAsync[_T]:
+        return AtomAsync(
             controller=self,
             path=path,
             default=default,
+        )
+
+    def named_atom(
+        self,
+        key: str,
+        default: _T = None,
+    ) -> AtomAsync[_T]:
+        return AtomAsync(
+            controller=self,
+            path=None,
+            key=key,
+            default=default,
+        )
+
+
+class AtomAsync(BaseAtom[ControllerAsync, _T]):
+    async def set(
+        self,
+        value: _T,
+        eq_func: EqualityFunction | None = None,
+        payload: Any = None,
+        skip_notify: bool = False,
+    ):
+        await self.controller.set_state(
+            self.path,
+            value,
+            eq_func=eq_func,
+            default=self.default,
+            payload=payload,
+            skip_notify=skip_notify,
+        )
+
+    async def get(self, write_default: bool = False) -> _T:
+        return await self.controller.get_state(
+            self.path,
+            default=self.default,
+            write_default=write_default,
+        )
+
+    def subscribe_by_id(
+        self,
+        callback_id: CallbackID,
+        ignore_missing: bool = False,
+    ) -> CallbackID:
+        return self.controller.subscribe_by_id(
+            self.path,
+            callback_id,
+            ignore_missing=ignore_missing,
+        )
+
+    def subscribe(
+        self,
+        callback: StateCallback[ControllerAsync, Any],
+        force_id: CallbackID | None = None,
+        replace: bool = False,
+    ) -> CallbackID:
+        return self.controller.subscribe(
+            self.path,
+            callback,
+            force_id=force_id,
+            replace=replace,
+        )
+
+    async def derive(
+        self,
+        dest: PathLike | BaseAtom[Any, _R],
+        transform: Callable[[_T], Awaitable[_R]],
+    ):
+        return await self.controller.derive(
+            dest=dest,
+            source=self.path,
+            transform=transform,  # type: ignore (atom default)
+        )
+
+    async def ping(
+        self,
+        payload: Any = None,
+    ):
+        await self.controller.ping(
+            self.path,
+            self.default,
+            payload,
+        )
+
+    async def derive_from(
+        self,
+        *sources: PathLike,
+        transform: Callable[[DeriveData], Awaitable[_T]],
+        payload: Any = None,
+    ):
+        await self.controller.derive_many(
+            self.path,
+            sources,
+            transform,
+            payload=payload,
         )
 
 

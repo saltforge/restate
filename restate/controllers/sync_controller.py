@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 from typing_extensions import Any, Self, Sequence, Callable, TypeVar
 import operator
 from pathlib import PurePosixPath as Path
 
-from restate.atoms.sync_atom import SyncAtom
 
 from .internal_types import EqualityFunction, PathLike, StateCallback, StateEvent
-from .base import BaseController, DeriveData
+from .base import BaseAtom, BaseController, DeriveData
 from .callback_store import CallbackID
 
 from restate.shared.constants import ROOT_PATH
@@ -15,6 +16,7 @@ from restate.backends.memory import InMemoryBackend
 
 
 _T = TypeVar("_T")
+_R = TypeVar("_R")
 
 
 fake_default = Sentinel("state_default")
@@ -140,7 +142,7 @@ class ControllerSync(BaseController):
     def ping(
         self,
         path: PathLike,
-        default: _T | None = None,
+        default: Any | None = None,
         payload: Any = None,
     ):
         """
@@ -148,7 +150,7 @@ class ControllerSync(BaseController):
         default is passed to .get_state
         """
 
-        value: _T | None = self.get_state(path, default)
+        value = self.get_state(path, default)
 
         event = self.build_event(path, value, value, payload)
 
@@ -233,13 +235,110 @@ class ControllerSync(BaseController):
 
     def atom(
         self,
-        path: PathLike,
-        default: _T | None = None,
-    ) -> SyncAtom[_T]:
-        return SyncAtom(
+        path: PathLike | None = None,
+        key: str | None = None,
+        default: _T = None,
+    ) -> Atom[_T]:
+        return Atom(
             controller=self,
             path=path,
+            key=key,
             default=default,
+        )
+
+    def named_atom(
+        self,
+        key: str,
+        default: _T = None,
+    ) -> Atom[_T]:
+        return Atom(
+            controller=self,
+            path=None,
+            key=key,
+            default=default,
+        )
+
+
+class Atom(BaseAtom[ControllerSync, _T]):
+    def set(
+        self,
+        value: _T,
+        eq_func: EqualityFunction | None = None,
+        payload: Any = None,
+        skip_notify: bool = False,
+    ):
+        self.controller.set_state(
+            self.path,
+            value,
+            eq_func=eq_func,
+            default=self.default,
+            payload=payload,
+            skip_notify=skip_notify,
+        )
+
+    def get(self, write_default: bool = False) -> _T:
+        return self.controller.get_state(
+            self.path,
+            default=self.default,
+            write_default=write_default,
+        )
+
+    def subscribe_by_id(
+        self,
+        callback_id: CallbackID,
+        ignore_missing: bool = False,
+    ) -> CallbackID:
+        return self.controller.subscribe_by_id(
+            self.path,
+            callback_id,
+            ignore_missing=ignore_missing,
+        )
+
+    def subscribe(
+        self,
+        callback: StateCallback[ControllerSync, Any],
+        force_id: CallbackID | None = None,
+        replace: bool = False,
+    ) -> CallbackID:
+        return self.controller.subscribe(
+            self.path,
+            callback,
+            force_id=force_id,
+            replace=replace,
+        )
+
+    def derive(
+        self,
+        dest: PathLike | BaseAtom[Any, _R],
+        transform: Callable[[_T], _R],
+    ):
+        return self.controller.derive(
+            dest=dest,
+            source=self.path,
+            transform=transform,  # type: ignore (atom default)
+        )
+
+    def ping(
+        self,
+        payload: Any = None,
+    ):
+        self.controller.ping(
+            self.path,
+            self.default,
+            payload,
+        )
+
+    def derive_from(
+        self,
+        *sources: PathLike,
+        transform: Callable[[DeriveData], _T],
+        payload: Any = None,
+    ):
+        self.controller.derive_many(
+            self.path,
+            sources,
+            transform,
+            payload=payload,
         )
 
 

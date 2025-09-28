@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import TypeVar
+from typing import Generic, TypeVar
+from random import Random
+from uuid import UUID
 
 from typing_extensions import (
     Any,
@@ -9,6 +11,8 @@ from typing_extensions import (
 
 from pathlib import PurePosixPath as Path
 
+from restate.shared.constants import ROOT_PATH
+
 
 _T = TypeVar("_T")
 
@@ -16,6 +20,11 @@ _T = TypeVar("_T")
 class BaseController:
     def __init__(self):
         self.callbacks: CallbackStore = CallbackStore()
+
+    def get_temporary_path(self, key: str | None = None) -> Path:
+        root = ROOT_PATH
+        rng = Random(key)
+        return root / "tmp" / UUID(bytes=rng.randbytes(16)).hex
 
     def resolve_path(self, path: PathLike) -> Path:
         while not isinstance(path, Path):
@@ -167,6 +176,30 @@ class DeriveData:
 
     def __getattr__(self, attr: str):
         return self.get(attr)
+
+
+_C = TypeVar("_C", bound=BaseController)
+
+
+class BaseAtom(Generic[_C, _T]):
+    default: _T
+    path: PathLike
+    controller: _C
+
+    def __init__(
+        self,
+        controller: _C,
+        path: PathLike | None = None,
+        key: str | None = None,
+        default: _T = None,
+    ) -> None:
+        self.default = default
+        self.controller = controller
+
+        if path is None:
+            path = controller.get_temporary_path(key)
+
+        self.path = path
 
 
 from .internal_types import PathLike, StateCallback, StateEvent  # noqa: E402
