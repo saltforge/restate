@@ -283,6 +283,17 @@ class Atom(BaseAtom[ControllerSync, _T]):
             write_default=write_default,
         )
 
+    def delete(
+        self,
+        payload: Any = None,
+        skip_notify: bool = False,
+    ) -> bool:
+        return self.controller.del_state(
+            self.path,
+            payload=payload,
+            skip_notify=skip_notify,
+        )
+
     def subscribe_by_id(
         self,
         callback_id: CallbackID,
