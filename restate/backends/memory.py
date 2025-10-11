@@ -57,7 +57,7 @@ class InMemoryBackend(Backend):
         if not store:
             return
 
-        for child_path in store.children:
+        for child_path in [*store.children]:
             self.delete(child_path)
 
         if path != ROOT_PATH:  # do not delete root
